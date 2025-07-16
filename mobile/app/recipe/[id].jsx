@@ -31,6 +31,7 @@ const RecipeDetailScreen = () => {
       try {
         const response = await fetch(`${API_URL}/favorites/${userId}`);
         const favorites = await response.json();
+        console.log("🔍 Favorites loaded:", favorites);
         const isRecipeSaved = favorites.some((fav) => fav.recipeId === parseInt(recipeId));
         setIsSaved(isRecipeSaved);
       } catch (error) {
@@ -63,51 +64,84 @@ const RecipeDetailScreen = () => {
     loadRecipeDetail();
   }, [recipeId, userId]);
 
-  const getYouTubeEmbedUrl = (url) => {
-    // example url: https://www.youtube.com/watch?v=mTvlmY4vCug
-    const videoId = url.split("v=")[1];
-    return `https://www.youtube.com/embed/${videoId}`;
+ 
+
+const handleToggleSave = async () => {
+  setIsSaving(true);
+
+  const parsedRecipeId = parseInt(recipeId);
+
+  if (!userId || !parsedRecipeId || !recipe) {
+    console.error("❌ Missing required data:", {
+      userId,
+      parsedRecipeId,
+      recipe,
+    });
+    Alert.alert("Error", "Missing user or recipe data.");
+    setIsSaving(false);
+    return;
+  }
+
+  const payload = {
+    userId: userId,
+    recipeId: parsedRecipeId,
+    title: recipe.title,
+    image: recipe.image,
+    cookTime: recipe.cookTime,
+    servings: recipe.servings,
   };
 
-  const handleToggleSave = async () => {
-    setIsSaving(true);
+  console.log("📦 Sending payload to backend:", payload);
+  console.log("📡 POST URL:", `${API_URL}/favorites`);
 
-    try {
-      if (isSaved) {
-        // remove from favorites
-        const response = await fetch(`${API_URL}/favorites/${userId}/${recipeId}`, {
-          method: "DELETE",
-        });
-        if (!response.ok) throw new Error("Failed to remove recipe");
+  try {
+    if (isSaved) {
+      // 🔁 Remove from favorites
+      console.log("🗑 Removing recipe from favorites...");
 
-        setIsSaved(false);
-      } else {
-        // add to favorites
-        const response = await fetch(`${API_URL}/favorites`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId,
-            recipeId: parseInt(recipeId),
-            title: recipe.title,
-            image: recipe.image,
-            cookTime: recipe.cookTime,
-            servings: recipe.servings,
-          }),
-        });
+      const response = await fetch(`${API_URL}/favorites/${userId}/${parsedRecipeId}`, {
+        method: "DELETE",
+      });
 
-        if (!response.ok) throw new Error("Failed to save recipe");
-        setIsSaved(true);
+      console.log("❌ DELETE status:", response.status);
+
+      if (!response.ok) {
+        const errorMsg = await response.text();
+        throw new Error(`Failed to remove favorite: ${errorMsg}`);
       }
-    } catch (error) {
-      console.error("Error toggling recipe save:", error);
-      Alert.alert("Error", `Something went wrong. Please try again.`);
-    } finally {
-      setIsSaving(false);
+
+      setIsSaved(false);
+      console.log("✅ Successfully removed from favorites.");
+    } else {
+      // ❤️ Add to favorites
+      const response = await fetch(`${API_URL}/favorites`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        console: true,
+      });
+
+      const result = await response.json();
+      console.log("✅ Response from backend:", result);
+      console.log("📨 Status:", response.status);
+
+      if (!response.ok) {
+        throw new Error(result?.error || "Failed to add to favorites.");
+      }
+
+      setIsSaved(true);
+      console.log("✅ Successfully saved to favorites.");
     }
-  };
+  } catch (error) {
+    console.error("🚨 Error in toggle favorite:", error);
+    Alert.alert("Error", error.message || "Something went wrong.");
+  } finally {
+    setIsSaving(false);
+  }
+};
+
 
   if (loading) return <LoadingSpinner message="Loading recipe details..." />;
 
@@ -194,29 +228,7 @@ const RecipeDetailScreen = () => {
             </View>
           </View>
 
-          {/* {recipe.youtubeUrl && (
-            <View style={recipeDetailStyles.sectionContainer}>
-              <View style={recipeDetailStyles.sectionTitleRow}>
-                <LinearGradient
-                  colors={["#FF0000", "#CC0000"]}
-                  style={recipeDetailStyles.sectionIcon}
-                >
-                  <Ionicons name="play" size={16} color={COLORS.white} />
-                </LinearGradient>
-
-                <Text style={recipeDetailStyles.sectionTitle}>Video Tutorial</Text>
-              </View>
-
-              <View style={recipeDetailStyles.videoCard}>
-                <WebView
-                  style={recipeDetailStyles.webview}
-                  source={{ uri: getYouTubeEmbedUrl(recipe.youtubeUrl) }}
-                  allowsFullscreenVideo
-                  mediaPlaybackRequiresUserAction={false}
-                />
-              </View>
-            </View>
-          )} */}
+        
 
           {/* INGREDIENTS SECTION */}
           <View style={recipeDetailStyles.sectionContainer}>

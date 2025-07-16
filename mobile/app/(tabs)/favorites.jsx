@@ -14,32 +14,40 @@ const FavoritesScreen = () => {
   const { user } = useUser();
   const [favoriteRecipes, setFavoriteRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
+useEffect(() => {
+  const loadFavorites = async () => {
+    console.log("🔄 Loading favorites for user:", user.id);
 
-  useEffect(() => {
-    const loadFavorites = async () => {
-      try {
-        const response = await fetch(`${API_URL}/favorites/${user.id}`);
-        if (!response.ok) throw new Error("Failed to fetch favorites");
+    try {
+      const response = await fetch(`${API_URL}/favorites/${user.id}`);
+      console.log("📡 Fetch response status:", response.status);
 
-        const favorites = await response.json();
+      if (!response.ok) throw new Error("Failed to fetch favorites");
 
-        // transform the data to match the RecipeCard component's expected format
-        const transformedFavorites = favorites.map((favorite) => ({
-          ...favorite,
-          id: favorite.recipeId,
-        }));
+      const favorites = await response.json();
+      console.log("✅ Raw favorites data:", favorites);
 
-        setFavoriteRecipes(transformedFavorites);
-      } catch (error) {
-        console.log("Error loading favorites", error);
-        Alert.alert("Error", "Failed to load favorites");
-      } finally {
-        setLoading(false);
-      }
-    };
+      // transform the data to match the RecipeCard component's expected format
+      const transformedFavorites = favorites.map((favorite) => ({
+        ...favorite,
+        id: favorite.recipeId,
+      }));
 
-    loadFavorites();
-  }, [user.id]);
+      console.log("🔁 Transformed favorites:", transformedFavorites);
+
+      setFavoriteRecipes(transformedFavorites);
+    } catch (error) {
+      console.error("❌ Error loading favorites", error);
+      Alert.alert("Error", "Failed to load favorites");
+    } finally {
+      setLoading(false);
+      console.log("✅ Finished loading favorites.");
+    }
+  };
+
+  loadFavorites();
+}, [user.id]);
+
 
   const handleSignOut = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [

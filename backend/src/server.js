@@ -61,6 +61,15 @@ app.get("/api/favorites/:userId", async (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   }
 });
+app.get("/api/favorites", async (req, res) => {
+  try {
+    const allFavorites = await db.select().from(favoritesTable);
+    res.status(200).json(allFavorites);
+  } catch (error) {
+    console.log("Error fetching the favorites", error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
 
 app.delete("/api/favorites/:userId/:recipeId", async (req, res) => {
   try {
