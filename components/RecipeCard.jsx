@@ -7,7 +7,7 @@ import { recipeCardStyles } from "../assets/styles/home.styles";
 
 export default function RecipeCard({ recipe }) {
   const router = useRouter();
-
+  console.log("RecipeCard rendered with recipe:", router);
   return (
     <TouchableOpacity
       style={recipeCardStyles.container}
